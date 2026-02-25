@@ -1,29 +1,57 @@
-deploy
-failed 6 minutes ago in 1m 0s
-4s
-4s
-0s
-1s
-3s
-40s
-4s
-Run appleboy/ssh-action@v0.1.10
-/usr/bin/docker run --name aae4f30b772ea572483cad27dcfe09f78b87_ecfbe2 --label 04aae4 --workdir /github/workspace --rm -e "AWS_REGION" -e "ECR_REPOSITORY" -e "AWS_DEFAULT_REGION" -e "AWS_ACCESS_KEY_ID" -e "AWS_SECRET_ACCESS_KEY" -e "INPUT_HOST" -e "INPUT_USERNAME" -e "INPUT_KEY" -e "INPUT_SCRIPT" -e "INPUT_PORT" -e "INPUT_PASSPHRASE" -e "INPUT_PASSWORD" -e "INPUT_SYNC" -e "INPUT_USE_INSECURE_CIPHER" -e "INPUT_CIPHER" -e "INPUT_TIMEOUT" -e "INPUT_COMMAND_TIMEOUT" -e "INPUT_KEY_PATH" -e "INPUT_FINGERPRINT" -e "INPUT_PROXY_HOST" -e "INPUT_PROXY_PORT" -e "INPUT_PROXY_USERNAME" -e "INPUT_PROXY_PASSWORD" -e "INPUT_PROXY_PASSPHRASE" -e "INPUT_PROXY_TIMEOUT" -e "INPUT_PROXY_KEY" -e "INPUT_PROXY_KEY_PATH" -e "INPUT_PROXY_FINGERPRINT" -e "INPUT_PROXY_CIPHER" -e "INPUT_PROXY_USE_INSECURE_CIPHER" -e "INPUT_SCRIPT_STOP" -e "INPUT_ENVS" -e "INPUT_ENVS_FORMAT" -e "INPUT_DEBUG" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKFLOW_REF" -e "GITHUB_WORKFLOW_SHA" -e "GITHUB_REPOSITORY_ID" -e "GITHUB_TRIGGERING_ACTOR" -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" -e "GITHUB_STEP_SUMMARY" -e "GITHUB_STATE" -e "GITHUB_OUTPUT" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_ENVIRONMENT" -e "RUNNER_TOOL_CACHE" -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e "ACTIONS_RESULTS_URL" -e "ACTIONS_ORCHESTRATION_ID" -e GITHUB_ACTIONS=true -e CI=true -v "/var/run/docker.sock":"/var/run/docker.sock" -v "/home/runner/work/_temp":"/github/runner_temp" -v "/home/runner/work/_temp/_github_home":"/github/home" -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" -v "/home/runner/work/my-aws-devops-project/my-aws-devops-project":"/github/workspace" 04aae4:f30b772ea572483cad27dcfe09f78b87
-======CMD======
-aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin ***.dkr.ecr.ap-south-1.amazonaws.com
-docker pull ***.dkr.ecr.ap-south-1.amazonaws.com/my-devops-app:1be1bf1c8271a581c9f65b0fefa7e405bc63bf6a
-docker stop my-app || true
-docker rm my-app || true
-docker run -d --name my-app -p 3000:3000 --restart always ***.dkr.ecr.ap-south-1.amazonaws.com/my-devops-app:1be1bf1c8271a581c9f65b0fefa7e405bc63bf6a
+name: Deploy to AWS EC2
 
-======END======
-err: WARNING! Your password will be stored unencrypted in /home/ec2-user/.docker/config.json.
-err: Configure a credential helper to remove this warning. See
-err: https://docs.docker.com/engine/reference/commandline/login/#credentials-store
-out: Login Succeeded
-err: permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post "http://%2Fvar%2Frun%2Fdocker.sock/v1.44/images/create?fromImage=***.dkr.ecr.ap-south-1.amazonaws.com%2Fmy-devops-app&tag=1be1bf1c8271a581c9f65b0fefa7e405bc63bf6a": dial unix /var/run/docker.sock: connect: permission denied
-err: permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Post "http://%2Fvar%2Frun%2Fdocker.sock/v1.44/containers/my-app/stop": dial unix /var/run/docker.sock: connect: permission denied
-err: permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Delete "http://%2Fvar%2Frun%2Fdocker.sock/v1.44/containers/my-app": dial unix /var/run/docker.sock: connect: permission denied
-err: docker: permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Head "http://%2Fvar%2Frun%2Fdocker.sock/_ping": dial unix /var/run/docker.sock: connect: permission denied.
-err: See 'docker run --help'.
-2026/02/25 08:44:47 Process exited with status 126
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: ap-south-1
+  ECR_REPOSITORY: my-devops-app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Push Image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/my-devops-app:$IMAGE_TAG .
+          docker push $ECR_REGISTRY/my-devops-app:$IMAGE_TAG
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            aws ecr get-login-password --region ap-south-1 | sudo docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com
+
+            sudo docker pull ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/my-devops-app:${{ github.sha }}
+
+            sudo docker stop my-app || true
+            sudo docker rm my-app || true
+
+            sudo docker run -d \
+              --name my-app \
+              -p 3000:3000 \
+              --restart always \
+              ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/my-devops-app:${{ github.sha }}
